@@ -31,9 +31,9 @@ var PTZ_PELCO_D_HPATROL_STOP=21;
 var IO_ON=94;
 var IO_OFF=95;
 
-var XMLFilePath = "data.xml"; //xmlÆÄÀÏÀÌÀÖ´Â°æ·Î
+var XMLFilePath = "data.xml"; //xmlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´Â°ï¿½ï¿½
 var XMLObj = null;
-var searchWord = null;  //Ã£À»³ëµåÀÇ ¾îiÆ®¸®ºäÆ® Å°¿öµå
+var searchWord = null;  //Ã£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½iÆ®ï¿½ï¿½ï¿½ï¿½Æ® Å°ï¿½ï¿½ï¿½ï¿½
 
 var axis_x=0;
 var axis_y=0;
@@ -57,28 +57,28 @@ function pause(numberMillis)
 }
 function onClick()
 {
-	XMLObj = document.getElementById("xmlObj"); //XMLÅÂ±×¸¦ ÀÌ¿ëÇÑ ±â¹ý
+	XMLObj = document.getElementById("xmlObj"); //XMLï¿½Â±×¸ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     XMLObj.async = false;
 	XMLObj.load(XMLFilePath);     
 
-     //¿¹¿ÜÃ³¸®
+     //ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½
 	if (XMLObj.parseError != 0)
 	{ 
-		alert("Error: " + XMLObj.parseError.line + "Line " + XMLObj.parseError.linepos  + "¹øÂ°¹®ÀÚ\n\n¿¡ ÀÌÀ¯: " + XMLObj.parseError.reason);
+		alert("Error: " + XMLObj.parseError.line + "Line " + XMLObj.parseError.linepos  + "ï¿½ï¿½Â°ï¿½ï¿½ï¿½ï¿½\n\nï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: " + XMLObj.parseError.reason);
 		return;
 	}
 	searchWord = "normal";
 	//searchWord = "calibrate";
 	//searchWord = document.getElementById("searchBox").value;
-	var xroot = XMLObj.documentElement;   //ÃÖ»óÀÇ ³ëµå ÃßÃâ
+	var xroot = XMLObj.documentElement;   //ï¿½Ö»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	var ResultNode=xroot.selectSingleNode('//command[@id = "'+ searchWord +'"]'); 
 	
-	if (ResultNode == null) //°á°ú°¡ ¾øÀ¸¸é null ¹ÝÈ¯
-		alert("°Ë»ö°á°ú ¾øÀ½");    
+	if (ResultNode == null) //ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ null ï¿½ï¿½È¯
+		alert("ï¿½Ë»ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½");    
 	//else
 	//	alert(ResultNode.xml);
 	
-	//childNodes.length¼Ó¼ºÀ» ÀÌ¿ëÇÑ ÇÏÀ§·Îµå ÃßÃâ
+	//childNodes.lengthï¿½Ó¼ï¿½ï¿½ï¿½ ï¿½Ì¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Îµï¿½ ï¿½ï¿½ï¿½ï¿½
 	/*for(var i = 0 ; i < ResultNode.childNodes.length; i++)
 	{
 	 alert(
@@ -95,13 +95,52 @@ function onClick()
 		axis_new_x = axis_new_x - axis_origin_x;
 		axis_new_y = axis_new_y - axis_origin_y;
 		var rate = 0;
-		if(axis_y != axis_new_y)
+		if(axis_y != axis_new_y && axis_x != axis_new_x)
+		{
+			if(axis_y < axis_new_y && axis_x < axis_new_x)
+			{
+				rate = axis_new_y / axis_y;
+				rate = rate * (3.2/120) * 10000;
+				axis_y = axis_new_y;
+				decoder_control(PTZ_RIGHT_UP);
+				//pause(rate);
+				setTimeout("decoder_control(PTZ_STOP)", rate);
+			}
+			else if(axis_y > axis_new_y && axis_x < axis_new_x)
+			{
+				rate = axis_new_y / axis_y;
+				rate = rate * (3.2/120) * 10000;
+				axis_y = axis_new_y;
+				decoder_control(PTZ_RIGHT_DOWN);
+				//pause(rate);
+				setTimeout("decoder_control(PTZ_STOP)", rate);
+			}
+			else if(axis_y < axis_new_y && axis_x > axis_new_x)
+			{
+				rate = axis_new_y / axis_y;
+				rate = rate * (3.2/120) * 10000;
+				axis_y = axis_new_y;
+				decoder_control(PTZ_LEFT_UP);
+				//pause(rate);
+				setTimeout("decoder_control(PTZ_STOP)", rate);
+			}
+			else if(axis_y < axis_new_y && axis_x < axis_new_x)
+			{
+				rate = axis_new_y / axis_y;
+				rate = rate * (3.2/120) * 10000;
+				axis_y = axis_new_y;
+				decoder_control(PTZ_LEFT_DOWN);
+				//pause(rate);
+				setTimeout("decoder_control(PTZ_STOP)", rate);
+			}
+		}
+		else if(axis_y != axis_new_y && axis_x == axis_new_x)
 		{
 			//alert(axis_new_y);
 			if(axis_y < axis_new_y)
 			{
 				rate = axis_new_y / axis_y;
-				rate = rate * (3.2/120) * 100000;
+				rate = rate * (3.2/120) * 10000;
 				axis_y = axis_new_y;
 				decoder_control(TILT_UP);
 				//pause(rate);
@@ -110,21 +149,21 @@ function onClick()
 			else if(axis_y > axis_new_y)
 			{
 				rate = axis_y / axis_new_y;
-				rate = rate * (3.2/120) * 100000;
+				rate = rate * (3.2/120) * 10000;
 				axis_y = axis_new_y;
 				decoder_control(TILT_DOWN);
 				//pause(rate);
 				setTimeout("decoder_control(TILT_DOWN_STOP)", rate);
 			}
 		}
-		if(axis_x != axis_new_x)
+		else if(axis_x != axis_new_x && axis_y && axis_new_y)
 		{
 			
 			if(axis_x < axis_new_x)
 			{
 				//alert(axis_new_x+","+axis_x);
 				rate = axis_new_x / axis_x;
-				rate = rate * (135/320)*(3.2/120) * 100000;
+				rate = rate * (135/320)*(3.2/120) * 10000;
 				axis_x = axis_new_x;
 				decoder_control(PAN_RIGHT);
 				//pause(rate);
@@ -133,7 +172,7 @@ function onClick()
 			else if(axis_x > axis_new_x)
 			{
 				rate = axis_x / axis_new_x;
-				rate = rate * (135/320)*(3.2/120) * 100000;
+				rate = rate * (135/320)*(3.2/120) * 10000;
 				axis_x = axis_new_x;
 				decoder_control(PAN_LEFT);
 				//pause(rate);
@@ -156,7 +195,7 @@ function onClick()
 	if(searchWord == "normal") 
 		setTimeout("onClick()", 1000);
 	//var AxisNode = xroot.selectNodes('//axis'); 
-	//selectNodes¸Þ¡©¼Òµå¿Í  Xquery¸¦ÀÌ¿ëÇÏ¿© axis³ëµåµéÀ»  ÄÃ·º¼ÇÀ¸·Î °¡Á®¿Â´Ù
+	//selectNodesï¿½Þ¡ï¿½ï¿½Òµï¿½ï¿½  Xqueryï¿½ï¿½ï¿½Ì¿ï¿½ï¿½Ï¿ï¿½ axisï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  ï¿½Ã·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â´ï¿½
 	//var AuthorNode = XMLObj.getElementsByTagName("author");
 
 /*	for (var i = 0 ; i < AxisNode.length; i++)
