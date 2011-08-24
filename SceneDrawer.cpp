@@ -126,6 +126,23 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 	glVertex3i(pt[1].X, pt[1].Y, 0);
 }
 
+void saveHeadLocation(float x, float y) {
+  static int firstLaunch = 1;
+  FILE *f = fopen("data.xml", "w");
+  fprintf(f, "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
+  if(firstLaunch == 0) {
+    fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
+    fprintf(f, "<calibrate_x>1</calibrate_x><calibrate_y>1</calibrate_y>\n");
+    fprintf(f, "<axis_x>%f</axis_x>\n<axis_y>%f</axis_y>\n</command></boos_control>\n", x, y);
+  } else {
+    firstLaunch = 0;
+    fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
+    fprintf(f, "<calibrate_x>%f</calibrate_x><calibrate_y>%f</calibrate_y>\n", x, y);
+    fprintf(f, "<axis_x>1</axis_x>\n<axis_y>1</axis_y>\n</command></boos_control>\n", x, y);
+  }
+  fclose(f);
+}
+
 void PrintJointPoint(XnUserID player, XnSkeletonJoint eJoint) {
     if (!g_UserGenerator.GetSkeletonCap().IsCalibrated(player))
     {
@@ -149,6 +166,7 @@ void PrintJointPoint(XnUserID player, XnSkeletonJoint eJoint) {
 	  XnPoint3D pt;
     g_DepthGenerator.ConvertRealWorldToProjective(2, &joint.position, &pt);
     printf("HEAD: %f, %f, %f \n", pt.X, pt.Y, pt.Z);
+    saveHeadLocation(pt.X, pt.Y);
 }
 
 void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd, XnUserID player)

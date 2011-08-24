@@ -1,0 +1,269 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+</title>
+<style type="text/javascript"> 
+body{
+},font,td{font:normal 13px Arial,sans-serif}
+</style>
+<script> 
+var PTZ_STOP=1;
+var TILT_UP=0;
+var TILT_UP_STOP=1;
+var TILT_DOWN=2;
+var TILT_DOWN_STOP=3;
+var PAN_LEFT=4;
+var PAN_LEFT_STOP=5;
+var PAN_RIGHT=6;
+var PAN_RIGHT_STOP=7;
+var PTZ_LEFT_UP=90;
+var PTZ_RIGHT_UP=91;
+var PTZ_LEFT_DOWN=92;
+var PTZ_RIGHT_DOWN=93;
+var PTZ_CENTER=25;
+var PTZ_VPATROL=26;
+var PTZ_VPATROL_STOP=27;
+var PTZ_HPATROL=28;
+var PTZ_HPATROL_STOP=29;
+var PTZ_PELCO_D_HPATROL=20;
+var PTZ_PELCO_D_HPATROL_STOP=21;
+var IO_ON=94;
+var IO_OFF=95;
+
+var XMLFilePath = "data.xml"; //xml파일이있는경로
+var XMLObj = null;
+var searchWord = null;  //찾을노드의 어i트리뷰트 키워드
+
+var axis_x=0;
+var axis_y=0;
+var axis_new_x=0;
+var axis_new_y=0;
+var axis_origin_x=0;
+var axis_origin_y=0;
+var cal_value = false;
+
+function pause(numberMillis)
+{
+	var now = new Date();
+	var exitTime = now.getTime() + numberMillis;
+
+	while(true)
+	{
+		now = new Date();
+		if(now.getTime() > exitTime)
+			return;
+	}
+}
+function onClick()
+{
+	XMLObj = document.getElementById("xmlObj"); //XML태그를 이용한 기법
+    XMLObj.async = false;
+	XMLObj.load(XMLFilePath);     
+
+     //예외처리
+	if (XMLObj.parseError != 0)
+	{ 
+		alert("Error: " + XMLObj.parseError.line + "Line " + XMLObj.parseError.linepos  + "번째문자\n\n에 이유: " + XMLObj.parseError.reason);
+		return;
+	}
+	searchWord = "normal";
+	//searchWord = "calibrate";
+	//searchWord = document.getElementById("searchBox").value;
+	var xroot = XMLObj.documentElement;   //최상의 노드 추출
+	var ResultNode=xroot.selectSingleNode('//command[@id = "'+ searchWord +'"]'); 
+	
+	if (ResultNode == null) //결과가 없으면 null 반환
+		alert("검색결과 없음");    
+	//else
+	//	alert(ResultNode.xml);
+	
+	//childNodes.length속성을 이용한 하위로드 추출
+	/*for(var i = 0 ; i < ResultNode.childNodes.length; i++)
+	{
+	 alert(
+	  "XML : " + ResultNode.childNodes.item(i).xml + "\n" + 
+	  "Text  : " + ResultNode.childNodes.item(i).text + "\n"
+	 );
+	 }*/
+	axis_origin_x =  ResultNode.childNodes.item(0).text;
+	axis_origin_y =  ResultNode.childNodes.item(1).text;
+	if(searchWord == "normal")
+	{
+		axis_new_x = ResultNode.childNodes.item(2).text;
+		axis_new_y = ResultNode.childNodes.item(3).text;
+		axis_new_x = axis_new_x - axis_origin_x;
+		axis_new_y = axis_new_y - axis_origin_y;
+		var rate = 0;
+		if(axis_y != axis_new_y)
+		{
+			//alert(axis_new_y);
+			if(axis_y < axis_new_y)
+			{
+				rate = axis_new_y / axis_y;
+				rate = rate * (3.2/120) * 100000;
+				axis_y = axis_new_y;
+				decoder_control(TILT_UP);
+				//pause(rate);
+				setTimeout("decoder_control(TILT_UP_STOP)", rate);
+			}
+			else if(axis_y > axis_new_y)
+			{
+				rate = axis_y / axis_new_y;
+				rate = rate * (3.2/120) * 100000;
+				axis_y = axis_new_y;
+				decoder_control(TILT_DOWN);
+				//pause(rate);
+				setTimeout("decoder_control(TILT_DOWN_STOP)", rate);
+			}
+		}
+		if(axis_x != axis_new_x)
+		{
+			
+			if(axis_x < axis_new_x)
+			{
+				//alert(axis_new_x+","+axis_x);
+				rate = axis_new_x / axis_x;
+				rate = rate * (135/320)*(3.2/120) * 100000;
+				axis_x = axis_new_x;
+				decoder_control(PAN_RIGHT);
+				//pause(rate);
+				setTimeout("decoder_control(PAN_RIGHT_STOP)", rate);
+			}
+			else if(axis_x > axis_new_x)
+			{
+				rate = axis_x / axis_new_x;
+				rate = rate * (135/320)*(3.2/120) * 100000;
+				axis_x = axis_new_x;
+				decoder_control(PAN_LEFT);
+				//pause(rate);
+				setTimeout("decoder_control(PAN_LEFT_STOP)", rate);
+				//decoder_control(PAN_LEFT_STOP);
+			}
+		}
+	}
+	else if(searchWord == "calibrate")
+	{
+		cal_value = ResultNode.childNodes.item(0).text;
+		
+		if(cal_value == "true")
+		{
+			axis_origin_x = ResultNode.childNodes.item(1).text;
+			axis_origin_y = ResultNode.childNodes.item(2).text;
+			center_onclick();
+		}
+	}
+	if(searchWord == "normal") 
+		setTimeout("onClick()", 1000);
+	//var AxisNode = xroot.selectNodes('//axis'); 
+	//selectNodes메­소드와  Xquery를이용하여 axis노드들을  컬렉션으로 가져온다
+	//var AuthorNode = XMLObj.getElementsByTagName("author");
+
+/*	for (var i = 0 ; i < AxisNode.length; i++)
+	{  
+	 alert(AuthorNode.item(i).nodeName + " : " + AuthorNode.item(i).text); 
+	}*/
+	
+}
+
+function vlc_play()
+{
+	var vlc=document.getElementById('vlc_player');
+
+	vlc.style.width=320;
+	vlc.style.height=240;
+
+	var cache_value;
+	var str_options='';
+
+	/*cache_value = getcookie('cache_value');
+	
+	if(cache_value=='' || cache_value == null)
+	{
+		cache_value = 500;
+		setcookie('cache_value',500,720);
+	}*/
+	cache_value = 720;
+	str_options = ":http-caching=" + cache_value;	
+	
+	vlc.playlist.items.clear();
+	var options=new Array(str_options);
+	//var url='http://192.168.0.202:302/videostream.asf?user=admin&pwd=';
+	var url='http://c9288.aipcam.com:99/videostream.asf?user=user&pwd=user';
+
+	vlc.playlist.add(url,'live video',options);
+	vlc.playlist.play();
+		
+	vlc.audio.volume=200;
+}
+function decoder_control(command)
+{
+    hideallpre();
+    
+	if(l_index==0)
+	{
+	content_frame.switchon_onclick(command);
+	}
+}
+
+function vlc_stop()
+{
+	var vlc=document.getElementById('vlc_player');
+	if (vlc.playlist.items.count && vlc.playlist.isPlaying) 
+	{   
+	    document.getElementById("vlc_ie").style.display="none";
+		vlc.playlist.stop();
+		
+    }
+}
+
+function vlc_togglePause()
+{
+	var vlc=document.getElementById('vlc_player');
+	if (vlc.playlist.items.count && vlc.playlist.isPlaying) 
+		vlc.playlist.togglePause();
+}
+ 
+function decoder_control(command)
+{
+	action_zone.location='http://c9288.aipcam.com:99/decoder_control.cgi?command='+command;
+}
+function camera_control(param,value)
+{
+    action_zone.location='http://c9288.aipcam.com:99/camera_control.cgi?param='+param+'&value='+value;
+}
+function center_onclick() 
+{
+	//if (!ptz_type) 
+	decoder_control(PTZ_CENTER);
+	//http://c9288.aipcam.com:99/decoder_control.cgi?command=25
+}
+function set_M(v,_v)
+{
+    camera_control(v,_v);
+    if(v==0)
+    {
+    setTimeout('location.reload()',2000);
+    }
+}
+
+</script>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#0000cc" vlink="#0000cc" marginheight="0" topmargin="0" rightmargin="0" leftmargin="0" alink="#ff0000" onUnload="vlc_stop()" onLoad="vlc_play()">
+<iframe name="action_zone" style="display:none"></iframe>
+<table border="0" cellpadding="0" cellspacing="0" width="640" height="480">
+<tr>
+<td bgcolor="black" align="center" valign="middle">
+<script id="vlc_ie">
+		document.write('<OBJECT classid=clsid:9BE31822-FDAD-461B-AD51-BE1D1C159921 id="vlc_player"><param name="Visible" value="True"/><param name="AutoLoop" value="True"/><param name="AutoPlay" value="True"/></OBJECT>');
+</script>
+<iframe name="" style="display:none"></iframe>
+</td></tr></table>
+<table border="0" cellpadding="0" cellspacing="0" width="640" height="60" bgcolor="#4d4d4d">
+</table>
+<xml id="xmlObj"></xml>
+<script type="text/javascript">
+onClick();
+</script>
+</body>
+</html>
