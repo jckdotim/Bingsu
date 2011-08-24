@@ -126,33 +126,34 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 	glVertex3i(pt[1].X, pt[1].Y, 0);
 }
 
-void saveHeadLocation(float x, float y) {
+void saveHeadLocation(float x, float y, int gesture) {
   static int firstLaunch = 1;
   FILE *f = fopen("data.xml", "w");
   fprintf(f, "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
   if(firstLaunch == 0) {
     fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
     fprintf(f, "<calibrate>true</calibrate><calibrate_x>1</calibrate_x><calibrate_y>1</calibrate_y>\n");
-    fprintf(f, "<axis_x>%f</axis_x>\n<axis_y>%f</axis_y>\n</command></boos_control>\n", x, y);
+    fprintf(f, "<axis_x>%f</axis_x>\n<axis_y>%f</axis_y>\n<gesture>%d</gesture></command></boos_control>\n", x, y, gesture);
   } else {
     firstLaunch = 0;
     fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
     fprintf(f, "<calibrate>false</calibrate><calibrate_x>%f</calibrate_x><calibrate_y>%f</calibrate_y>\n", x, y);
-    fprintf(f, "<axis_x>1</axis_x>\n<axis_y>1</axis_y>\n</command></boos_control>\n", x, y);
+    fprintf(f, "<axis_x>1</axis_x>\n<axis_y>1</axis_y>\n<gesture>%d</gesture></command></boos_control>\n", gesture);
   }
   fclose(f);
 }
 
-void PrintJointPoint(XnUserID player, XnSkeletonJoint eJoint) {
+XnPoint3D getJointPoint(XnUserID player, XnSkeletonJoint eJoint) {
+	  XnPoint3D pt;
     if (!g_UserGenerator.GetSkeletonCap().IsCalibrated(player))
     {
         printf("not calibrated!\n");
-        return;
+        return pt;
     }
     if (!g_UserGenerator.GetSkeletonCap().IsTracking(player))
     {
         printf("not tracked!\n");
-        return;
+        return pt;
     }
 
     XnSkeletonJointPosition joint;
@@ -160,13 +161,15 @@ void PrintJointPoint(XnUserID player, XnSkeletonJoint eJoint) {
 
     if (joint.fConfidence < 0.5)
     {
-        return;
+        return pt;
     }
 
-	  XnPoint3D pt;
     g_DepthGenerator.ConvertRealWorldToProjective(2, &joint.position, &pt);
-    printf("HEAD: %f, %f, %f \n", pt.X, pt.Y, pt.Z);
-    saveHeadLocation(pt.X, pt.Y);
+    return pt;
+}
+void printJointPoint(XnUserID player, XnSkeletonJoint eJoint) {
+    XnPoint3D pt = getJointPoint(player, eJoint);
+    printf("%f, %f, %f \n", pt.X, pt.Y, pt.Z);
 }
 
 void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd, XnUserID player)
@@ -326,7 +329,36 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd, Xn
 	{
 		glBegin(GL_LINES);
 		glColor4f(1-Colors[player%nColors][0], 1-Colors[player%nColors][1], 1-Colors[player%nColors][2], 1);
-		PrintJointPoint(player, XN_SKEL_HEAD);
+    
+    // gesture
+    static int gesture = 0;
+    static XnPoint3D previousLeftHandPt;
+    XnPoint3D newLeftHandPt;
+    newLeftHandPt = getJointPoint(player, XN_SKEL_LEFT_HAND);
+    
+    if(previousLeftHandPt.X > 0 && previousLeftHandPt.X < 640)
+      if(previousLeftHandPt.X - newLeftHandPt.X > 60)
+          gesture = 1;
+      else if(previousLeftHandPt.X - newLeftHandPt.X < -60)
+          gesture = 2;
+      else if(previousLeftHandPt.Y - newLeftHandPt.Y > 60)
+          gesture = 3;
+      else if(previousLeftHandPt.Y - newLeftHandPt.Y < -60)
+          gesture = 4;
+      else
+          gesture = 0;
+    if(gesture != 0)
+      printf("gesture: %d\n", gesture);
+
+    previousLeftHandPt = newLeftHandPt;
+		
+    // head
+    XnPoint3D pt = getJointPoint(player, XN_SKEL_HEAD);
+    
+    // save
+    saveHeadLocation(pt.X, pt.Y, gesture);
+    
+
     DrawLimb(player, XN_SKEL_HEAD, XN_SKEL_NECK);
 
 		DrawLimb(player, XN_SKEL_NECK, XN_SKEL_LEFT_SHOULDER);
