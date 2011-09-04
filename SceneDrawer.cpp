@@ -127,15 +127,16 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 }
 
 void saveHeadLocation(float x, float y, int gesture) {
-  static int firstLaunch = 1;
+  static int calibration = 1;
   FILE *f = fopen("data.xml", "w");
   fprintf(f, "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
-  if(firstLaunch == 0) {
+  if(calibration == 0) {
     fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
     fprintf(f, "<calibrate>false</calibrate><calibrate_x>1</calibrate_x><calibrate_y>1</calibrate_y>\n");
     fprintf(f, "<axis_x>%f</axis_x>\n<axis_y>%f</axis_y>\n<gesture>%d</gesture></command></boos_control>\n", x, y, gesture);
   } else {
-    firstLaunch = 0;
+    if(gesture == 1)
+      calibration = 0;
     fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
     fprintf(f, "<calibrate>true</calibrate><calibrate_x>%f</calibrate_x><calibrate_y>%f</calibrate_y>\n", x, y);
     fprintf(f, "<axis_x>1</axis_x>\n<axis_y>1</axis_y>\n<gesture>%d</gesture></command></boos_control>\n", gesture);
