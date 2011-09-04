@@ -126,21 +126,22 @@ void DrawLimb(XnUserID player, XnSkeletonJoint eJoint1, XnSkeletonJoint eJoint2)
 	glVertex3i(pt[1].X, pt[1].Y, 0);
 }
 
-void saveHeadLocation(float x, float y, int gesture) {
+void saveLocation(XnPoint3D head, XnPoint3D lhand, int gesture) {
   static int calibration = 1;
   FILE *f = fopen("data.xml", "w");
   fprintf(f, "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
   if(calibration == 0) {
     fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
-    fprintf(f, "<calibrate>false</calibrate><calibrate_x>1</calibrate_x><calibrate_y>1</calibrate_y>\n");
-    fprintf(f, "<axis_x>%f</axis_x>\n<axis_y>%f</axis_y>\n<gesture>%d</gesture></command></boos_control>\n", x, y, gesture);
+    fprintf(f, "<calibrate>false</calibrate><calibrate_x>1</calibrate_x><calibrate_y>1</calibrate_y><calibrate_z>1</calibrate_z>\n");
+    fprintf(f, "<axis_x>%f</axis_x>\n<axis_y>%f</axis_y>\n<axis_z>%f</axis_z><gesture>%d</gesture></command>\n", head.X, head.Y, head.Z, gesture);
   } else {
     if(gesture == 1)
       calibration = 0;
     fprintf(f, "<boos_control>\n<command id=\"normal\">\n");
-    fprintf(f, "<calibrate>true</calibrate><calibrate_x>%f</calibrate_x><calibrate_y>%f</calibrate_y>\n", x, y);
-    fprintf(f, "<axis_x>1</axis_x>\n<axis_y>1</axis_y>\n<gesture>%d</gesture></command></boos_control>\n", gesture);
+    fprintf(f, "<calibrate>true</calibrate><calibrate_x>%f</calibrate_x><calibrate_y>%f</calibrate_y><calibrate_z>%f</calibrate_z>\n", head.X, head.Y, head.Z);
+    fprintf(f, "<axis_x>1</axis_x>\n<axis_y>1</axis_y>\n<axis_z>1</axis_z><gesture>%d</gesture></command>\n", gesture);
   }
+  fprintf(f, "<lhand_x>%f</lhand_x><lhand_y>%f</lhand_y><lhand_z>%f</lhand_z>", lhand.X, lhand.Y, lhand.Z);
   fclose(f);
 }
 
@@ -357,7 +358,7 @@ void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd, Xn
     XnPoint3D pt = getJointPoint(player, XN_SKEL_HEAD);
     
     // save
-    saveHeadLocation(pt.X, pt.Y, gesture);
+    saveLocation(pt, newLeftHandPt, gesture);
     
 
     DrawLimb(player, XN_SKEL_HEAD, XN_SKEL_NECK);
